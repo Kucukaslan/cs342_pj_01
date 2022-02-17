@@ -17,7 +17,7 @@ int main()
 	char *bufptr;
 	int buflen;
 
-	mq = mq_open(MQNAME, O_RDWR | O_CREAT, 0666, NULL);
+	mq = mq_open(MQ_CLI_S, O_RDWR | O_CREAT, 0666, NULL);
 	if (mq == -1) {
 		perror("can not create msg queue\n");
 		exit(1);
@@ -29,7 +29,7 @@ int main()
 
 	/* allocate large enough space for the buffer to store 
         an incoming message */
-        buflen = mq_attr.mq_msgsize;
+    buflen = mq_attr.mq_msgsize;
 	bufptr = (char *) malloc(buflen);
 
 	while (1) {
@@ -46,6 +46,9 @@ int main()
 		printf("received item->id = %d\n", itemptr->id);
 		printf("received item->astr = %s\n", itemptr->astr);
 		printf("\n");
+
+
+
 	}
 
 	free(bufptr);

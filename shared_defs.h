@@ -5,6 +5,8 @@ struct item {
 
 struct ChildParentItem {
 	int pid;
+//	int freq_size;
+	int freq[1000]; 
 };
 
 #define MQ_CLI_S "/21901779_a_CLIENT_SERVER"
