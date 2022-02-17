@@ -41,14 +41,10 @@ int main()
 
 		printf("mq_receive success, message size = %d\n", n);
 
-		itemptr = (struct item *) bufptr;
+		itemptr = (struct ChildParentItem *) bufptr;
 
-		printf("received item->id = %d\n", itemptr->id);
-		printf("received item->astr = %s\n", itemptr->astr);
+		printf("received item->pid = %d\n", itemptr->pid);
 		printf("\n");
-
-
-
 	}
 
 	free(bufptr);

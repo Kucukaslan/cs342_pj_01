@@ -44,11 +44,9 @@ int main(int argc, char **argv)
 	struct mq_attr mq_c_s_attr;
 	struct ChildParentItem *childParentItemPtr;
 	int mq_c_s_n;
-	char *bufptr;
-	int buflen;
-
+    
     // open/create m queue STARTS
-    mq_c_s = mq_open(MQ_C_S, O_RDWR | O_CREAT, 0666, NULL);
+    mq_c_s = mq_open(MQ_C_S, O_RDWR | O_CREAT | O_NONBLOCK, 0666, NULL);
     if (mq_c_s == -1) {
 		perror("Cannot create msg queue FOR ChildParent\n");
 		exit(1);
@@ -59,10 +57,6 @@ int main(int argc, char **argv)
     mq_getattr(mq_c_s, &mq_c_s_attr);
   	printf("mq maximum msgsize = %d\n bytes", (int) mq_c_s_attr.mq_msgsize);
 
-    /* allocate large enough space for the buffer to store 
-        an incoming message */
-    buflen = mq_c_s_attr.mq_msgsize;
-	bufptr = (char *) malloc(buflen);
     // open/create m queue ENDS
 
 
@@ -93,11 +87,13 @@ int main(int argc, char **argv)
         }
     }
 
-    while(1) {
+    i = 0;
+    while(i <30) {
         // processClientMQ();  
         processChildMQ(mq_c_s);   
-        printf("\n--------------\n");     
+        printf("%d:--------------\n\n", i);     
         // sendClientMQ();
+        i++;
     }
 
     // wait for all children to terminate
@@ -106,43 +102,11 @@ int main(int argc, char **argv)
 
     printf("all children terminated. bye... \n");
 
-    /*
-        mqd_t mq;
-        struct item item;
-        int n;
 
-        mq = mq_open(MQ_CLI_S, O_RDWR);
-        if (mq == -1) {
-            perror("can not open msg queue\n");
-            exit(1);
-        }
-        printf("mq opened, mq id = %d\n", (int) mq);
-        int i = 0;
+    mq_close(mq_c_s);
 
-        while (1) {
-            item.id = i;
-            strcpy(item.astr, "this string is sample data\n");
-
-            n = mq_send(mq, (char *) &item, sizeof(struct item), 0);
-
-            if (n == -1) {
-                perror("mq_send failed\n");
-                exit(1);
-            }
-
-            printf("mq_send success, item size = %d\n",
-                   (int) sizeof(struct item));
-            printf("item->id   = %d\n", item.id);
-            printf("item->astr = %s\n", item.astr);
-            printf("\n");
-            i++;
-            sleep(1);
-        }
-
-        mq_close(mq);
-        return 0;
-
-        */
+    free(child_pids);
+    return 0;       
 } // end of main method
 
 void child(char *filename, int intervalcount, int intervalwidth, int intervalstart)
@@ -180,10 +144,8 @@ void child(char *filename, int intervalcount, int intervalwidth, int intervalsta
         printf("mq_send success, item size = %d\n",
                 (int) sizeof(struct ChildParentItem));
         printf("childParentItemPtr->pid   = %d\n", childParentItemPtr.pid);
-
     }
-
-
+    mq_close(mq_c_s);
     exit(0); /* child is terminating */
 }
 
@@ -191,17 +153,25 @@ void child(char *filename, int intervalcount, int intervalwidth, int intervalsta
 void processChildMQ(mqd_t mq) {
     char *bufptr;
 	int buflen;
+	struct mq_attr mq_c_s_attr;
+
+    /* allocate large enough space for the buffer to store 
+        an incoming message */
+    mq_getattr(mq, &mq_c_s_attr);
+    buflen = mq_c_s_attr.mq_msgsize;
+	bufptr = (char *) malloc(buflen);
+
     int n;
     n = mq_receive(mq, (char *) bufptr, buflen, NULL);
     if (n == -1) {
         perror("mq_receive failed\n");
-        printf("mq_receivefailed = %d\n", n);
-        return;
+        
     }
-    printf("mq_receive success, message size = %d\n", n);
+    else {
+        printf("mq_receive success, message size = %d\n", n);
 
-    struct ChildParentItem *itemptr = (struct ChildParentItem *) bufptr;
-    printf("itemptr->pid = %d", itemptr->pid);
-
-
+        struct ChildParentItem *itemptr = (struct ChildParentItem *) bufptr;
+        printf("itemptr->pid = %d\n", itemptr->pid);
+    }
+    free(bufptr);
 }
