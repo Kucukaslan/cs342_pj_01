@@ -1,9 +1,11 @@
 a: hc hs
 
+all: hc hs
+
 hc: histclient.c
-	gcc -Wall -o histclient histclient.c -lrt
+	gcc -Wall -gdwarf-4 -o histclient histclient.c -lrt
 hs: histserver.c
-	gcc -Wall -o histserver histserver.c -lrt
+	gcc -Wall -gdwarf-4 -o histserver histserver.c -lrt
 
 
 clean: 
