@@ -166,62 +166,54 @@ int main(int argc, char **argv)
     // wait for all children to terminate
     for (i = 0; i < N; ++i)
         wait(NULL);
-    printf("all children terminated. bye... \n");
-    free(child_pids);
-    printf("child_pids freed\n");
-    mq_close(mq_c_s);
-    while (1) {
-        {
-            char *bufptr;
-            int buflen;
-            struct mq_attr mq_cli_s_attr;
-            /* allocate large enough space for the buffer to store an incoming message */
-            mq_getattr(mq_cli_s, &mq_cli_s_attr);
-            buflen = mq_cli_s_attr.mq_msgsize;
-            bufptr = (char *) malloc(buflen);
-            int n;
-            n = mq_receive(mq_cli_s, (char *) bufptr, buflen, NULL);
-            if (n == -1) {
-                perror("mq_receive failed, so still waiting for termination msg\n");
-                free(bufptr);
-                sleep(1);
-                continue;
-            } else {
-                // printf("mq_receive success, message size = %d\n", n);
-                struct ClientServerItem *itemptr = (struct ClientServerItem *) bufptr;
-                s_status = itemptr->done;
-                printf("s_status = %d\n", s_status);
-                free(bufptr);
-                break;
-                /**/
-            }
+    printf("all children terminated.\n");
+
+    while (s_status != SERVER_TERMINATE) {
+        char *bufptr;
+        int buflen;
+        struct mq_attr mq_cli_s_attr;
+        /* allocate large enough space for the buffer to store an incoming message */
+        mq_getattr(mq_cli_s, &mq_cli_s_attr);
+        buflen = mq_cli_s_attr.mq_msgsize;
+        bufptr = (char *) malloc(buflen);
+        int n;
+        n = mq_receive(mq_cli_s, (char *) bufptr, buflen, NULL);
+        if (n == -1) {
+            perror("mq_receive failed, so still waiting for termination msg\n");
+            free(bufptr);
+            sleep(1);
+            continue;
+        } else {
+            // printf("mq_receive success, message size = %d\n", n);
+            struct ClientServerItem *itemptr = (struct ClientServerItem *) bufptr;
+            s_status = itemptr->done;
+            printf("s_status = %d\n", s_status);
+            free(bufptr);
             break;
+            /**/
         }
-        /*
-        struct ClientServerItem params = processClientMQ(mq_cli_s);
-        sleep(1);
-        */
         break;
     }
-    if (s_status == SERVER_TERMINATE)
-    {
-        printf("termination msg received\n");
-        mq_close(mq_s_cli);
-        mq_close(mq_cli_s);
-        // todo: for some reason, the following line causes gives   "free(): invalid pointer" error
-        // print the address of interval_frequencies
-        //printf("interval_frequencies address: %p\n", interval_frequencies);
-        free(interval_frequencies);
-        printf("interval_frequencies freed\n");
-        return 0;
-    }
-    // todo: for some reason, the following line causes gives   "free(): invalid pointer" error
-    // print the address of interval_frequencies
-    //printf("interval_frequencies address: %p\n", interval_frequencies);
+    printf("termination msg received from client\n");
+    
+
+    // close and unlink the message queues
+    mq_close(mq_c_s);
+    mq_close(mq_s_cli);
+    mq_close(mq_cli_s);
+    mq_unlink(MQ_C_S);
+    mq_unlink(MQ_CLI_S);
+    mq_unlink(MQ_S_CLI);
+
+    // free the memory allocated 
+    free(child_pids);
+    printf("child_pids freed\n");
     free(interval_frequencies);
     printf("interval_frequencies freed\n");
     return 0;
 }// end of main method
+
+
 /** opens and process the file
 * opens the message queue
 * sends the result of file processing to the parent via the message queue
@@ -320,8 +312,10 @@ void child(char *filename, int intervalcount, int intervalwidth, int intervalsta
     }
     // free the memory
     free(intervals);
-    // close the sources mq and file
+    // close and unlink (delete) the mq 
     mq_close(mq_c_s);
+    
+    // close the file
     fclose(file);
     printf("mq_c_s closed by child process, mq_c_s id = %d\n", (int) mq_c_s);
 }
