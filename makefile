@@ -1,10 +1,13 @@
-a: hc hs
+a: all
+
+all: hc hs
 
 hc: histclient.c
-	gcc -Wall -o histclient histclient.c -lrt
+	gcc -Wall -gdwarf-4 -o histclient histclient.c -lrt
 hs: histserver.c
-	gcc -Wall -o histserver histserver.c -lrt
+	gcc -Wall -gdwarf-4 -o histserver histserver.c -lrt
 
-
+val: all
+	valgrind --leak-check=full --show-leak-kinds=all --leak-resolution=high --track-origins=yes --vgdb=yes ./histserver 2 abc def
 clean: 
 	rm -fr *~ histserver histclient
