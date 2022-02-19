@@ -17,7 +17,7 @@ int main(int argc, char **argv)
     int intervalcount = 10;// • Max value for <intervalcount> can be 1000. Min value is 1.
     int intervalwidth = 10;// • Max value for <intervalwidth> can be 1000000. Min value is 1.
     int intervalstart = 0;
-    bool s_status = SERVER_CONTINUE;
+    int s_status = SERVER_CONTINUE;
     int *interval_frequencies;
     // ...
     if (argc < 2) {
