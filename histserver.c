@@ -21,7 +21,7 @@ int main(int argc, char **argv)
     int *interval_frequencies;
     // ...
     if (argc < 2) {
-        printf("There is no sufficient parameters in histserver program\n");
+        printf("There are not sufficient parameters in histserver program\n");
         exit(-404);
     } else {
         N = atoi(argv[1]);
@@ -73,37 +73,33 @@ int main(int argc, char **argv)
     printf("mq maximum msgsize = %d\n bytes\n", (int) mq_cli_s_attr.mq_msgsize);
     // obtain intervalcount, intervalwidth, intervalstart from client
     while (1) {
-        {
-            char *bufptr;
-            int buflen;
-            struct mq_attr mq_cli_s_attr;
-            /* allocate large enough space for the buffer to store an incoming message */
-            mq_getattr(mq_cli_s, &mq_cli_s_attr);
-            buflen = mq_cli_s_attr.mq_msgsize;
-            bufptr = (char *) malloc(buflen);
-            int n;
-            n = mq_receive(mq_cli_s, (char *) bufptr, buflen, NULL);
-            if (n == -1) {
-                perror("mq_receive failed\n");
-                free(bufptr);
-                sleep(1);
-                continue;
-            } else {
-                // printf("mq_receive success, message size = %d\n", n);
-                struct ClientServerItem *itemptr = (struct ClientServerItem *) bufptr;
-                s_status = itemptr->done;
-                intervalwidth = itemptr->interval_width;
-                intervalstart = itemptr->interval_start;
-                intervalcount = itemptr->interval_count;
-                printf("s_status = %d\n", s_status);
-                printf("intervalwidth = %d\n", intervalwidth);
-                printf("intervalstart = %d\n", intervalstart);
-                printf("intervalcount = %d\n", intervalcount);
-                printf("-----------------endMessageReceive\n");
-                free(bufptr);
-                break;
-                /**/
-            }
+        char *bufptr;
+        int buflen;
+        struct mq_attr mq_cli_s_attr;
+        /* allocate large enough space for the buffer to store an incoming message */
+        mq_getattr(mq_cli_s, &mq_cli_s_attr);
+        buflen = mq_cli_s_attr.mq_msgsize;
+        bufptr = (char *) malloc(buflen);
+        int n;
+        n = mq_receive(mq_cli_s, (char *) bufptr, buflen, NULL);
+        if (n == -1) {
+            perror("mq_receive failed\n");
+            free(bufptr);
+            sleep(1);
+            continue;
+        } else {
+            // printf("mq_receive success, message size = %d\n", n);
+            struct ClientServerItem *itemptr = (struct ClientServerItem *) bufptr;
+            s_status = itemptr->done;
+            intervalwidth = itemptr->interval_width;
+            intervalstart = itemptr->interval_start;
+            intervalcount = itemptr->interval_count;
+            printf("s_status = %d\n", s_status);
+            printf("intervalwidth = %d\n", intervalwidth);
+            printf("intervalstart = %d\n", intervalstart);
+            printf("intervalcount = %d\n", intervalcount);
+            printf("-----------------endMessageReceive\n");
+            free(bufptr);
             break;
         }
         /*
@@ -112,12 +108,7 @@ int main(int argc, char **argv)
         */
         break;
     }
-    interval_frequencies = (int *) malloc(intervalcount * sizeof(int));
-    // printf("interval_frequencies address: %p\n", interval_frequencies);
-    // set all interval_frequencies to 0
-    for (int i = 0; i < intervalcount; i++) {
-        interval_frequencies[i] = 0;
-    }
+    
     printf("I am parent and my pid is: %d\n", parentid);
     int i;
     // creating childs.
@@ -125,17 +116,29 @@ int main(int argc, char **argv)
         child_pids[i] = fork();
         if (child_pids[i] < 0) {
             printf("Cannot create %d'th child process.\nProgram terminated.", i);
+            free(child_pids);
             exit(child_pids[i]);
         } else if (child_pids[i] == 0) {
             int index = i + 2;
             /* this part executed by child process*/
             // struct ChildParentItem child(char* filename, int intervalcount, int intervalwidth, int intervalstart);
             child(argv[index], intervalcount, intervalwidth, intervalstart);
+            free(child_pids);
+            exit(0); /* child is terminating */
         } else {
             /* parent process */
             printf("parent created child %d and child pid= %d\n", i, child_pids[i]);
         }
     }
+    
+    // allocate memory for interval_frequencies
+    interval_frequencies = (int *) malloc(intervalcount * sizeof(int));
+
+    // set all interval_frequencies to 0
+    for (int i = 0; i < intervalcount; i++) {
+        interval_frequencies[i] = 0;
+    }
+
     int terminated_childs = 0;
     while (terminated_childs < N) {
         if (processChildMQ(mq_c_s, interval_frequencies) == CHILD_TERMINATE) {
@@ -321,7 +324,6 @@ void child(char *filename, int intervalcount, int intervalwidth, int intervalsta
     mq_close(mq_c_s);
     fclose(file);
     printf("mq_c_s closed by child process, mq_c_s id = %d\n", (int) mq_c_s);
-    exit(0); /* child is terminating */
 }
 // ########### END OF CHILD
 // ########### START OF PROCESS CHILD MQ
