@@ -91,45 +91,10 @@ int main(int argc, char **argv)
         perror("mq_send: termination notice failed\n");
     }
     printf("client to server termination msg sent\n");
-    // free the memory
-    // close the sources mq and file
+
+    // close the mq
     mq_close(mq_cli_s);
     printf("mq_cli_s closed by client process, mq_cli_s id = %d\n", (int) mq_cli_s);
-    /*
-    mqd_t mq;
-    struct mq_attr mq_attr;
-    struct item *itemptr;
-    int n;
-    char *bufptr;
-    int buflen;
-    mq = mq_open(MQ_CLI_S, O_RDWR | O_CREAT, 0666, NULL);
-    if (mq == -1) {
-        perror("can not create msg queue\n");
-        exit(1);
-    }
-    printf("mq created, mq id = %d\n", (int) mq);
-    mq_getattr(mq, &mq_attr);
-
-    printf("mq maximum msgsize = %d\n", (int) mq_attr.mq_msgsize);
-    */
-    /* allocate large enough space for the buffer to store
-        an incoming message */
-    /*
-    buflen = mq_attr.mq_msgsize;
-    bufptr = (char *) malloc(buflen);
-    while (1) {
-        n = mq_receive(mq, (char *) bufptr, buflen, NULL);
-        if (n == -1) {
-            perror("mq_receive failed\n");
-            exit(1);
-        }
-        printf("mq_receive success, message size = %d\n", n);
-        itemptr = (struct item *) bufptr;
-        printf("received item->pid = %d\n", itemptr->pid);
-        printf("\n");
-    }
-    free(bufptr);
-    mq_close(mq);
-     */
+   
     return 0;
 }
