@@ -1,7 +1,7 @@
 #include <stdbool.h>
-struct item {
-    int id;
-    char astr[64];
+struct ServerClientItem {
+    int size;
+    int data[1000];
 };
 struct ChildParentItem {
     int pid;
