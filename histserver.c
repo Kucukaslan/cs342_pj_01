@@ -115,8 +115,9 @@ int main(int argc, char **argv)
         child_pids[i] = fork();
         if (child_pids[i] < 0) {
             printf("Cannot create %d'th child process.\nProgram terminated.", i);
+            int err = child_pids[i];
             free(child_pids);
-            exit(child_pids[i]);
+            exit(err);
         } else if (child_pids[i] == 0) {
             int index = i + 2;
             /* this part executed by child process*/
