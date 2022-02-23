@@ -1,5 +1,4 @@
-#include "shared_defs.h"
-#include <errno.h>
+#include "shared_defs_th.h"
 #include <mqueue.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -8,9 +7,6 @@
 int main(int argc, char **argv)
 {
     //  mq variables
-    // argv[1] intervalcount
-    // argv[2] interval_width
-    // argv[3] interval_start
     if (argc != 4 || !(atoi(argv[1]) >= 1 && atoi(argv[1]) <= 1000) ||
         !(atoi(argv[2]) >= 1 && atoi(argv[2]) <= 1000000)) {
         printf("Invalid parameters in histclient program\n");
@@ -50,41 +46,32 @@ int main(int argc, char **argv)
     mq_getattr(mq_s_cli, &mq_s_cli_attr);
     printf("mq maximum msgsize = %d\n bytes", (int) mq_s_cli_attr.mq_msgsize);
     while (1) {
-        {
-            char *bufptr;
-            int buflen;
-            struct mq_attr mq_s_cli_attr;
-            /* allocate large enough space for the buffer to store an incoming message */
-            mq_getattr(mq_s_cli, &mq_s_cli_attr);
-            buflen = mq_s_cli_attr.mq_msgsize;
-            bufptr = (char *) malloc(buflen);
-            int n;
-            n = mq_receive(mq_s_cli, (char *) bufptr, buflen, NULL);
-            if (n == -1) {
-                perror("server to client mq_receive failed\n");
-                free(bufptr);
-                sleep(1);
-                continue;
-            } else {
-                // printf("mq_receive success, message size = %d\n", n);
-                struct ServerClientItem *itemptr = (struct ServerClientItem *) bufptr;
-                int intervalStart = atoi(argv[3]);
-                int width = atoi(argv[2]);
-                for (int i = 0; i < itemptr->size; ++i) {
-                    printf("[%d,%d):%d\n", intervalStart, intervalStart + width, itemptr->data[i]);
-                    intervalStart = intervalStart + width;
-                }
-                free(bufptr);
-                break;
-                /**/
+        char *bufptr;
+        int buflen;
+        struct mq_attr mq_s_cli_attr;
+        /* allocate large enough space for the buffer to store an incoming message */
+        mq_getattr(mq_s_cli, &mq_s_cli_attr);
+        buflen = mq_s_cli_attr.mq_msgsize;
+        bufptr = (char *) malloc(buflen);
+        int n;
+        n = mq_receive(mq_s_cli, (char *) bufptr, buflen, NULL);
+        if (n == -1) {
+            perror("server to client mq_receive failed\n");
+            free(bufptr);
+            sleep(1);
+            continue;
+        } else {
+            // printf("mq_receive success, message size = %d\n", n);
+            struct ServerClientItem *itemptr = (struct ServerClientItem *) bufptr;
+            int intervalStart = atoi(argv[3]);
+            int width = atoi(argv[2]);
+            for (int i = 0; i < itemptr->size; ++i) {
+                printf("[%d,%d):%d\n", intervalStart, intervalStart + width, itemptr->data[i]);
+                intervalStart = intervalStart + width;
             }
+            free(bufptr);
             break;
         }
-        /*
-        struct ClientServerItem params = processClientMQ(mq_cli_s);
-        sleep(1);
-        */
-        break;
     }
     mq_close(mq_s_cli);
     // client sends the last message to the parent

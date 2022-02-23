@@ -1,4 +1,3 @@
-#include <stdbool.h>
 struct ServerClientItem {
     int size;
     int data[1000];
@@ -10,7 +9,7 @@ struct ChildParentItem {
     int status;
 };
 struct ClientServerItem {
-    bool done;
+    int done;
     int interval_start;
     int interval_width;
     int interval_count;
