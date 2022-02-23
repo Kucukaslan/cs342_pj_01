@@ -8,6 +8,9 @@
 int main(int argc, char **argv)
 {
     //  mq variables
+    // argv[1] intervalcount
+    // argv[2] interval_width
+    // argv[3] interval_start
     if (argc != 4 || !(atoi(argv[1]) >= 1 && atoi(argv[1]) <= 1000) ||
         !(atoi(argv[2]) >= 1 && atoi(argv[2]) <= 1000000)) {
         printf("Invalid parameters in histclient program\n");

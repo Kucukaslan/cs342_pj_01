@@ -15,15 +15,16 @@ struct targ {
     int intervalstart;
     int shared_arr_index;
 };
-void child(void *arg);
+void child_thread(struct targ *arg);
+
 int processChildMQ(mqd_t mq, int *interval_freq);
 int **shared_arr;
 int main(int argc, char **argv)
 {
     // constants
-    int N;
+    int N = 0;
     // histclient <intervalcount> <intervalwidth> <intervalstart>
-    // TODO
+
     int intervalcount = 10;// • Max value for <intervalcount> can be 1000. Min value is 1.
     int intervalwidth = 10;// • Max value for <intervalwidth> can be 1000000. Min value is 1.
     int intervalstart = 0;
@@ -55,22 +56,6 @@ int main(int argc, char **argv)
     mq_getattr(mq_s_cli, &mq_s_cli_attr);
     printf("mq maximum msgsize = %d\n bytes", (int) mq_s_cli_attr.mq_msgsize);
     // open/create m queue ENDS
-    // CREATE child mq
-    /*
-    mqd_t mq_c_s;
-    struct mq_attr mq_c_s_attr;
-    // open/create m queue STARTS
-    mq_c_s = mq_open(MQ_C_S, O_RDWR | O_CREAT | O_NONBLOCK, 0666, NULL);
-    if (mq_c_s == -1) {
-        perror("Cannot create msg queue FOR ChildParent\n");
-        exit(1);
-    }
-    printf("mq_c_s created, mq_c_s id = %d\n", (int) mq_c_s);
-    // GET ATTR
-    mq_getattr(mq_c_s, &mq_c_s_attr);
-    printf("mq maximum msgsize = %d\n bytes", (int) mq_c_s_attr.mq_msgsize);
-    // open/create m queue ENDS
-*/
     // CREATE client to server mq
     mqd_t mq_cli_s;
     struct mq_attr mq_cli_s_attr;
@@ -135,7 +120,7 @@ int main(int argc, char **argv)
         thread_args[j].intervalwidth = intervalwidth;
         thread_args[j].filename = argv[j + 2];
         thread_args[j].shared_arr_index = j;
-        int err = pthread_create(&(child_thread_ids[j]), NULL, (void *(*) (void *) ) child, (void *) &(thread_args[j]));
+        int err = pthread_create(&(child_thread_ids[j]), NULL, (void *(*) (void *) ) child_thread, (void *) &(thread_args[j]));
         if (child_thread_ids[j] < 0) {
             printf("Cannot create %d'th child thread with err=%d.\nProgram terminated.", j, err);
             free(child_thread_ids);
@@ -143,16 +128,7 @@ int main(int argc, char **argv)
             // TODO fix this on fork/exec as well
             exit(err);
         }
-        /*
-            } else if (child_thread_ids[j] == 0) {
-            int index = j + 2;
-            // this part executed by child process
-            // struct ChildParentItem child(char* filename, int intervalcount, int intervalwidth, int intervalstart);
-            //child(argv[index], intervalcount, intervalwidth, intervalstart);
-            free(child_thread_ids);
-            exit(0); // child is terminating */
-        /* parent process */
-        printf("parent created child thread number %d and child thread id= %lu\n", j, child_thread_ids[j]);
+            printf("parent created child thread number %d and child thread id= %lu\n", j, child_thread_ids[j]);
     }
     // allocate memory for interval_frequencies
     interval_frequencies = (int *) malloc(intervalcount * sizeof(int));
@@ -217,6 +193,7 @@ int main(int argc, char **argv)
     for (i = 0; i < N; ++i)
         wait(NULL);
     printf("all children terminated.\n");
+
     while (s_status != SERVER_TERMINATE) {
         char *bufptr;
         int buflen;
@@ -244,10 +221,9 @@ int main(int argc, char **argv)
     }
     printf("termination msg received from client\n");
     // close and unlink the message queues
-    //mq_close(mq_c_s);
     mq_close(mq_s_cli);
     mq_close(mq_cli_s);
-    //mq_unlink(MQ_C_S);
+
     mq_unlink(MQ_CLI_S);
     mq_unlink(MQ_S_CLI);
     // free the memory allocated
@@ -268,19 +244,19 @@ int main(int argc, char **argv)
 * opens the message queue
 * sends the result of file processing to the parent via the message queue
 * closes the message queue
-* finally, it terminates the child process.
+* finally, it terminates the thread.
 * @param filename the name of the file to be processed
 * @param intervalcount the number of intervals to be created
 * @param intervalwidth the width of each interval
 * @param intervalstart the start value of the first interval
 */
-void child(void *arg)
+void  child_thread(struct targ *arg)
 {
-    char *filename = ((struct targ *) arg)->filename;
-    int intervalcount = ((struct targ *) arg)->intervalcount;
-    int intervalwidth = ((struct targ *) arg)->intervalwidth;
-    int intervalstart = ((struct targ *) arg)->intervalstart;
-    int shared_arr_index = ((struct targ *) arg)->shared_arr_index;
+    char *filename    = arg->filename;
+    int intervalcount = arg->intervalcount;
+    int intervalwidth = arg->intervalwidth;
+    int intervalstart = arg->intervalstart;
+    int shared_arr_index =  arg->shared_arr_index;
     //printf("I am a child and my thread id=%d\n", getpid());
     printf("Parameters are %s, %d, %d, %d, %d\n", filename, intervalcount, intervalwidth, intervalstart,
            shared_arr_index);
@@ -378,102 +354,8 @@ void child(void *arg)
     pthread_exit(NULL);
     //printf("mq_c_s closed by child thread, mq_c_s id = %d\n", (int) mq_c_s);
 }
-/*
-void child(char *filename, int intervalcount, int intervalwidth, int intervalstart)
-{
-    printf("I am a child and mypid=%d\n", getpid());
-    printf("Parameters are %s, %d, %d, %d\n", filename, intervalcount, intervalwidth, intervalstart);
-    int i = 0;
-    // allocate memory for the array of intervals
-    // a number is counted in an interval indexed i
-    // if number is in interval [i*intervalwidth, (i+1)*intervalwidth)
-    int *intervals = (int *) malloc(intervalcount * sizeof(int));
-    // initialize the array of intervals to 0 (better to be safe)
-    for (i = 0; i < intervalcount; ++i)
-        intervals[i] = 0;
-    // try opening the file
-    // int file = open(filename, O_RDONLY);
-    FILE *file = fopen(filename, "r");
-    if (file == NULL) {
-        printf("error in opening the file named %s\n", filename);
-        exit(1);
-    }
-    // read the file
-    // assuming it is   "an integer per line"
-    //int hasNext;
-    char buf[1024];
-    // BEWARE THAT fgets reads until the new line character
-    // AND INCLUDES the new line character
-    // but DOES NOT INCLUDE the end of file character.
-    int number;
-    int number_of_lines = 0;
-    while (fgets(buf, 100, file) != NULL) {
-        //hasNext = read(file, buf, 1024);
-        number = atoi(buf);
-        // find the interval in which the number is located
-        // and increment the corresponding interval
-        int interval = (number - intervalstart) / intervalwidth;
-        if (interval >= 0 && interval < intervalcount) {
-            intervals[interval]++;
-            // TODO REMOVE DEBUG CODE
-            // printf("%d is in interval %d\n", number, interval);
-        } else
-            ;// todo uncomment? printf("number %d is not in interval [%d, %d)\n", number, intervalstart, intervalstart + intervalwidth * intervalcount);
-        // if (number_of_lines % 100 == 0)
-        // {
-        //     printf("%d lines read\n", number_of_lines);
-        // }
-        number_of_lines++;
-    }
-    // print the frequency of each interval
-    // with the interval start and end values
-    for (i = 0; i < intervalcount; ++i)
-        printf("interval [%d, %d) has %d numbers\n", intervalstart + i * intervalwidth,
-               intervalstart + (i + 1) * intervalwidth, intervals[i]);
-    //  mq variables
-    mqd_t mq_c_s;
-    struct ChildParentItem childParentItemPtr;
-    //	int mq_c_s_n;
-    // child opens mq queue STARTS
-    mq_c_s = mq_open(MQ_C_S, O_RDWR);
-    if (mq_c_s == -1) {
-        perror("Child cannot open msg queue FOR ChildParent\n");
-        exit(1);
-    }
-    printf("mq_c_s opened by child process, mq_c_s id = %d\n", (int) mq_c_s);
-    // create and send the messages
-    i = 0;
-    childParentItemPtr.status = CHILD_CONTINUE;
-    while (i < intervalcount) {
-        childParentItemPtr.pid = getpid();
-        childParentItemPtr.interval = i;
-        childParentItemPtr.interval_frequency = intervals[i];
-        int n = mq_send(mq_c_s, (char *) &childParentItemPtr, sizeof(struct ChildParentItem), 0);
-        if (n == -1) {
-            perror("mq_send failed\n");
-        }
-        // printf("mq_send success, item size = %d\n", (int) sizeof(struct ChildParentItem));
-        // printf("childParentItemPtr->pid   = %d\n---------\n", childParentItemPtr.pid);
-        i++;
-    }
-    // child sends the last message to the parent
-    childParentItemPtr.status = CHILD_TERMINATE;
-    childParentItemPtr.pid = getpid();
-    childParentItemPtr.interval = -1;
-    childParentItemPtr.interval_frequency = -1;
-    int n = mq_send(mq_c_s, (char *) &childParentItemPtr, sizeof(struct ChildParentItem), 0);
-    if (n == -1) {
-        perror("mq_send: termination notice failed\n");
-    }
-    // free the memory
-    free(intervals);
-    // close and unlink (delete) the mq
-    mq_close(mq_c_s);
-    // close the file
-    fclose(file);
-    printf("mq_c_s closed by child process, mq_c_s id = %d\n", (int) mq_c_s);
-}
- */
+
+
 // ########### END OF CHILD
 // ########### START OF PROCESS CHILD MQ
 int processChildMQ(mqd_t mq, int *interval_freq)

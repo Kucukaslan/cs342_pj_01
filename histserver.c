@@ -12,7 +12,7 @@ int main(int argc, char **argv)
     // constants
     int N;
     // histclient <intervalcount> <intervalwidth> <intervalstart>
-    // TODO
+
     int intervalcount = 10;// • Max value for <intervalcount> can be 1000. Min value is 1.
     int intervalwidth = 10;// • Max value for <intervalwidth> can be 1000000. Min value is 1.
     int intervalstart = 0;
