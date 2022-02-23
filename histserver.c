@@ -1,5 +1,4 @@
 #include "shared_defs.h"
-#include <errno.h>
 #include <mqueue.h>
 #include <stdio.h>
 #include <stdlib.h>

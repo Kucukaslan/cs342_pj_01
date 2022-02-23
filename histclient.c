@@ -91,10 +91,8 @@ int main(int argc, char **argv)
         perror("mq_send: termination notice failed\n");
     }
     printf("client to server termination msg sent\n");
-
     // close the mq
     mq_close(mq_cli_s);
     printf("mq_cli_s closed by client process, mq_cli_s id = %d\n", (int) mq_cli_s);
-   
     return 0;
 }
