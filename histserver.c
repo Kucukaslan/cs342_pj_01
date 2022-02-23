@@ -146,9 +146,12 @@ int main(int argc, char **argv)
         //printf("%d:--------------\n\n", i);
         i++;
     }
-    // print the start and end intervals result of interval_frequencies
-    struct ServerClientItem serverClientItem;
-    serverClientItem.size = intervalcount;
+    
+     // todo for some reason, if we don't set any value at initialization
+    struct ServerClientItem serverClientItem = { .size = intervalcount, .data = {-1} };
+    /* serverClientItem.size = intervalcount;
+    */
+    
     for (int j = 0; j < intervalcount; j++) {
         serverClientItem.data[j] = interval_frequencies[j];
         printf("%d: %d\n", j, interval_frequencies[j]);
@@ -276,7 +279,6 @@ void child(char *filename, int intervalcount, int intervalwidth, int intervalsta
                intervalstart + (i + 1) * intervalwidth, intervals[i]);
     //  mq variables
     mqd_t mq_c_s;
-    struct ChildParentItem childParentItemPtr;
     //	int mq_c_s_n;
     // child opens mq queue STARTS
     mq_c_s = mq_open(MQ_C_S, O_RDWR);
@@ -287,7 +289,9 @@ void child(char *filename, int intervalcount, int intervalwidth, int intervalsta
     printf("mq_c_s opened by child process, mq_c_s id = %d\n", (int) mq_c_s);
     // create and send the messages
     i = 0;
-    childParentItemPtr.status = CHILD_CONTINUE;
+    struct ChildParentItem childParentItemPtr = { .status = CHILD_CONTINUE, .pid=-1, .interval = -1, .interval_frequency = -1 };
+
+    //childParentItemPtr.status = CHILD_CONTINUE;
     while (i < intervalcount) {
         childParentItemPtr.pid = getpid();
         childParentItemPtr.interval = i;
@@ -345,7 +349,8 @@ int processChildMQ(mqd_t mq, int *interval_freq)
             printf("-----------------endMessageReceive\n");
         */
         status = itemptr->status;
-        interval_freq[itemptr->interval] = interval_freq[itemptr->interval] + itemptr->interval_frequency;
+        if( itemptr->interval >= 0 && itemptr->interval_frequency >= 0 )
+            interval_freq[itemptr->interval] = interval_freq[itemptr->interval] + itemptr->interval_frequency;
     }
     free(bufptr);
     return status;
