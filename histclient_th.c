@@ -8,7 +8,7 @@
 int main(int argc, char **argv)
 {
     //  mq variables
-    if (argc < 4 || !(atoi(argv[1]) >= 1 && atoi(argv[1]) <= 1000) ||
+    if (argc != 4 || !(atoi(argv[1]) >= 1 && atoi(argv[1]) <= 1000) ||
         !(atoi(argv[2]) >= 1 && atoi(argv[2]) <= 1000000)) {
         printf("Invalid parameters in histclient program\n");
         exit(-404);
