@@ -173,13 +173,18 @@ int main(int argc, char **argv)
         }
         interval_frequencies[j] = single_interval_sum;
     }
+
+    // todo for some reason, if we don't set any value at initialization
+    struct ServerClientItem serverClientItem = { .size = intervalcount, .data = {-1} };
+    /* serverClientItem.size = intervalcount;
+    */
+    
     // print the start and end intervals result of interval_frequencies
-    struct ServerClientItem serverClientItem;
-    serverClientItem.size = intervalcount;
     for (int j = 0; j < intervalcount; j++) {
         serverClientItem.data[j] = interval_frequencies[j];
         printf("%d: %d\n", j, interval_frequencies[j]);
     }
+    
     int n = mq_send(mq_s_cli, (char *) &serverClientItem, sizeof(struct ServerClientItem), 0);
     if (n == -1) {
         perror("mq_send: serverClientItem failed\n");
