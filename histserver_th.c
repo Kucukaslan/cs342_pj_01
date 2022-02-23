@@ -1,5 +1,4 @@
-#include "shared_defs.h"
-#include <errno.h>
+#include "shared_defs_th.h"
 #include <mqueue.h>
 #include <pthread.h>
 #include <stdio.h>
@@ -8,7 +7,7 @@
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <unistd.h>
-typedef struct targ targ;
+typedef struct targ targ;// some weird name collusion, idk
 struct targ {
     char *filename;
     int intervalcount;
@@ -242,7 +241,6 @@ int main(int argc, char **argv)
             break;
             /**/
         }
-        break;
     }
     printf("termination msg received from client\n");
     // close and unlink the message queues
