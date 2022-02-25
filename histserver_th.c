@@ -86,9 +86,9 @@ int main(int argc, char **argv)
         int n;
         n = mq_receive(mq_cli_s, (char *) bufptr, buflen, NULL);
         if (n == -1) {
-            perror("mq_receive failed\n");
+            //perror("mq_receive failed\n");
             free(bufptr);
-            sleep(1);
+            // sleep(1);         //sleep(1); // sleep for "one second", waste of time!
             continue;
         } else {
             // printf("mq_receive success, message size = %d\n", n);
@@ -180,28 +180,42 @@ int main(int argc, char **argv)
     }
 
     // todo for some reason, if we don't set any value at initialization
-    struct ServerClientItem serverClientItem = { .size = intervalcount, .data = {-1} };
-    /* serverClientItem.size = intervalcount;
-    */
-    
+    struct ServerClientItem serverClientItem = { .interval = -1, .interval_frequency = -1, .status = CLIENT_CONTINUE };
+
     // print the start and end intervals result of interval_frequencies
     for (int j = 0; j < intervalcount; j++) {
-        serverClientItem.data[j] = interval_frequencies[j];
+        //serverClientItem.data[j] = interval_frequencies[j];
         printf("%d: %d\n", j, interval_frequencies[j]);
     }
-    
-    int n = mq_send(mq_s_cli, (char *) &serverClientItem, sizeof(struct ServerClientItem), 0);
-    if (n == -1) {
-        perror("mq_send: serverClientItem failed\n");
-    }// print the address of interval_frequencies
-    printf("interval_frequencies address: %p\n", interval_frequencies);
-    // send the results to the client
-    // sendClientMQ();
-    // wait termination signal from client
-    // waitClientMQ();
-    // wait for all children to terminate
+
+    // send final intervals to client using mq_send
+    serverClientItem.status = CLIENT_CONTINUE;
+    for(int i = 0; i< intervalcount; /*i is increased only if the send succeeds!*/) {
+        serverClientItem.interval = i;
+        serverClientItem.interval_frequency = interval_frequencies[i];
+        /*
+            we handle the last interval here too,
+            because we want to try sending if it fails
+            we could've also handled this situation 
+            by creating another loop for the last interval
+            but I don't have the motivation to do it now. 
+        */
+        if( i == -1 + intervalcount) {
+            serverClientItem.status = CLIENT_TERMINATE;
+        }
+        int n = mq_send(mq_s_cli, (char *) &serverClientItem, sizeof(struct ServerClientItem), 0);
+        if (n == -1) {
+            printf("mq_send failed: %d\n",i);
+        } else {
+            i++;
+        }
+    }
+
+
     for (i = 0; i < N; ++i)
+    {
         wait(NULL);
+    }
     printf("all children terminated.\n");
 
     while (s_status != SERVER_TERMINATE) {
@@ -215,7 +229,7 @@ int main(int argc, char **argv)
         int n;
         n = mq_receive(mq_cli_s, (char *) bufptr, buflen, NULL);
         if (n == -1) {
-            perror("mq_receive failed, so still waiting for termination msg\n");
+            //perror("mq_receive failed, so still waiting for termination msg\n");
             free(bufptr);
             sleep(1);
             continue;
@@ -230,12 +244,14 @@ int main(int argc, char **argv)
         }
     }
     printf("termination msg received from client\n");
+
     // close and unlink the message queues
     mq_close(mq_s_cli);
     mq_close(mq_cli_s);
 
     mq_unlink(MQ_CLI_S);
     mq_unlink(MQ_S_CLI);
+
     // free the memory allocated
     free(child_thread_ids);
     printf("child_thread_ids freed\n");

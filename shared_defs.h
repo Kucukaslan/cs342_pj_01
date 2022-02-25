@@ -21,6 +21,7 @@ struct ClientServerItem {
 #define SERVER_TERMINATE 0
 #define CLIENT_CONTINUE 0
 #define CLIENT_TERMINATE 1
+
 #define MQ_CLI_S "/21901779_a_CLIENT_SERVER"
 #define MQ_S_CLI "/21901779_a_SERVER_CLIENT"
 #define MQ_C_S "/21901779_a_CHILD_SERVER"
