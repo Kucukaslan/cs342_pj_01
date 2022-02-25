@@ -17,7 +17,6 @@ struct targ {
 };
 void child_thread(struct targ *arg);
 
-int processChildMQ(mqd_t mq, int *interval_freq);
 int **shared_arr;
 int main(int argc, char **argv)
 {
@@ -45,8 +44,10 @@ int main(int argc, char **argv)
     // use argv directly to obtain file names
     pthread_t *child_thread_ids = (pthread_t *) malloc(N * sizeof(pthread_t));// stores process id
     struct targ *thread_args = (targ *) malloc(N * sizeof(targ));
-    pid_t parentid;
-    parentid = getpid();
+    
+    int n; // free temporary variable
+    char *bufptr;
+    int buflen;
     // CREATE server to client mq
     mqd_t mq_s_cli;
     struct mq_attr mq_s_cli_attr;
@@ -74,20 +75,15 @@ int main(int argc, char **argv)
     // GET ATTR
     mq_getattr(mq_cli_s, &mq_cli_s_attr);
     printf("mq maximum msgsize = %d\n bytes\n", (int) mq_cli_s_attr.mq_msgsize);
+    
+    buflen = mq_cli_s_attr.mq_msgsize;
+    bufptr = (char *) malloc(buflen);
+
     // obtain intervalcount, intervalwidth, intervalstart from client
     while (1) {
-        char *bufptr;
-        int buflen;
-        struct mq_attr mq_cli_s_attr;
-        /* allocate large enough space for the buffer to store an incoming message */
-        mq_getattr(mq_cli_s, &mq_cli_s_attr);
-        buflen = mq_cli_s_attr.mq_msgsize;
-        bufptr = (char *) malloc(buflen);
-        int n;
         n = mq_receive(mq_cli_s, (char *) bufptr, buflen, NULL);
         if (n == -1) {
             //perror("mq_receive failed\n");
-            free(bufptr);
             // sleep(1);         //sleep(1); // sleep for "one second", waste of time!
             continue;
         } else {
@@ -101,17 +97,13 @@ int main(int argc, char **argv)
             printf("intervalwidth = %d\n", intervalwidth);
             printf("intervalstart = %d\n", intervalstart);
             printf("intervalcount = %d\n", intervalcount);
-            printf("-----------------endMessageReceive\n");
-            free(bufptr);
+            printf("-----------------end message receive-----------\n");
             break;
         }
-        /*
-        struct ClientServerItem params = processClientMQ(mq_cli_s);
-        sleep(1);
-        */
         break;
     }
-    printf("I am parent and my pid is: %d\n", parentid);
+    free(bufptr);
+
     int i;
     // fill the 1st dim of shared_arr
     shared_arr = (int **) malloc(N * sizeof(int *));
@@ -218,31 +210,25 @@ int main(int argc, char **argv)
     }
     printf("all children terminated.\n");
 
+
+    buflen = mq_cli_s_attr.mq_msgsize;
+    bufptr = (char *) malloc(buflen);
     while (s_status != SERVER_TERMINATE) {
-        char *bufptr;
-        int buflen;
-        struct mq_attr mq_cli_s_attr;
-        /* allocate large enough space for the buffer to store an incoming message */
-        mq_getattr(mq_cli_s, &mq_cli_s_attr);
-        buflen = mq_cli_s_attr.mq_msgsize;
-        bufptr = (char *) malloc(buflen);
-        int n;
         n = mq_receive(mq_cli_s, (char *) bufptr, buflen, NULL);
         if (n == -1) {
             //perror("mq_receive failed, so still waiting for termination msg\n");
-            free(bufptr);
-            sleep(1);
+            //sleep(1);
             continue;
         } else {
             // printf("mq_receive success, message size = %d\n", n);
             struct ClientServerItem *itemptr = (struct ClientServerItem *) bufptr;
             s_status = itemptr->done;
             printf("s_status = %d\n", s_status);
-            free(bufptr);
             break;
             /**/
         }
     }
+    free(bufptr);
     printf("termination msg received from client\n");
 
     // close and unlink the message queues
@@ -379,38 +365,4 @@ void  child_thread(struct targ *arg)
     fclose(file);
     pthread_exit(NULL);
     //printf("mq_c_s closed by child thread, mq_c_s id = %d\n", (int) mq_c_s);
-}
-
-
-// ########### END OF CHILD
-// ########### START OF PROCESS CHILD MQ
-int processChildMQ(mqd_t mq, int *interval_freq)
-{
-    char *bufptr;
-    int buflen;
-    struct mq_attr mq_c_s_attr;
-    int status = CHILD_CONTINUE;
-    /* allocate large enough space for the buffer to store
-        an incoming message */
-    mq_getattr(mq, &mq_c_s_attr);
-    buflen = mq_c_s_attr.mq_msgsize;
-    bufptr = (char *) malloc(buflen);
-    int n;
-    n = mq_receive(mq, (char *) bufptr, buflen, NULL);
-    if (n == -1) {
-        // perror("mq_receive failed\n");
-    } else {
-        // printf("mq_receive success, message size = %d\n", n);
-        struct ChildParentItem *itemptr = (struct ChildParentItem *) bufptr;
-        /*
-            printf("itemptr->pid = %d\n", itemptr->pid);
-            printf("itemptr->interval = %d\n", itemptr->interval);
-            printf("itemptr->interval_frequency = %d\n", itemptr->interval_frequency);
-            printf("-----------------endMessageReceive\n");
-        */
-        status = itemptr->status;
-        interval_freq[itemptr->interval] = interval_freq[itemptr->interval] + itemptr->interval_frequency;
-    }
-    free(bufptr);
-    return status;
 }
