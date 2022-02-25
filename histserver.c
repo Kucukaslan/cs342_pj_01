@@ -9,10 +9,15 @@ void child(char *filename, int intervalcount, int intervalwidth,
            int intervalstart);
 int processChildMQ(mqd_t mq, int *interval_freq);
 int main(int argc, char **argv) {
+  // clean up the message queue
+  mq_unlink(MQ_C_S);
+  mq_unlink(MQ_CLI_S);
+  mq_unlink(MQ_S_CLI);
+  
   // constants
   int N;
-  // histclient <intervalcount> <intervalwidth> <intervalstart>
 
+  // histclient <intervalcount> <intervalwidth> <intervalstart>
   int intervalcount =
       10; // • Max value for <intervalcount> can be 1000. Min value is 1.
   int intervalwidth =

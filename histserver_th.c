@@ -21,6 +21,11 @@ int processChildMQ(mqd_t mq, int *interval_freq);
 int **shared_arr;
 int main(int argc, char **argv)
 {
+    // clean message queues
+    mq_unlink(MQ_C_S);
+    mq_unlink(MQ_CLI_S);
+    mq_unlink(MQ_S_CLI);
+
     // constants
     int N = 0;
     // histclient <intervalcount> <intervalwidth> <intervalstart>
