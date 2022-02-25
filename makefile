@@ -15,14 +15,14 @@ hct: histclient_th.c
 hst: histserver_th.c
 	gcc -Wall -gdwarf-4 -o histserver_th histserver_th.c -lpthread -lrt
 
-hsval: all
-	valgrind --leak-check=full --show-leak-kinds=all --leak-resolution=high --track-origins=yes --vgdb=yes ./histserver 1 all
-hcval: all
+hsval: hs
+	valgrind --leak-check=full --show-leak-kinds=all --leak-resolution=high --track-origins=yes --vgdb=yes ./histserver 1 abc
+hcval: hc
 	valgrind --leak-check=full --show-leak-kinds=all --leak-resolution=high --track-origins=yes --vgdb=yes ./histclient 1000 1000 1000
 
-hstval: allt
+hstval: hst
 	valgrind --leak-check=full --show-leak-kinds=all --leak-resolution=high --track-origins=yes --vgdb=yes ./histserver_th 2 abc def
-hctval: allt
+hctval: hct
 	valgrind --leak-check=full --show-leak-kinds=all --leak-resolution=high --track-origins=yes --vgdb=yes ./histclient_th 10 10 10
 
 
