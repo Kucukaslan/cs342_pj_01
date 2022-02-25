@@ -16,7 +16,7 @@ hst: histserver_th.c
 	gcc -Wall -gdwarf-4 -o histserver_th histserver_th.c -lpthread -lrt
 
 hsval: all
-	valgrind --leak-check=full --show-leak-kinds=all --leak-resolution=high --track-origins=yes --vgdb=yes ./histserver 1 all
+	valgrind --leak-check=full --show-leak-kinds=all --leak-resolution=high --track-origins=yes --vgdb=yes ./histserver 3 abc def all
 hcval: all
 	valgrind --leak-check=full --show-leak-kinds=all --leak-resolution=high --track-origins=yes --vgdb=yes ./histclient 1000 1000 1000
 
