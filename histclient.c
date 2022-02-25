@@ -19,10 +19,6 @@ int main(int argc, char **argv) {
   int width = atoi(argv[2]);
   int count = atoi(argv[1]);
   mqd_t mq_cli_s;
-  struct ClientServerItem clientServerItem = {.interval_start = start,
-                                              .interval_width = width,
-                                              .interval_count = count,
-                                              .done = SERVER_CONTINUE};
   // child opens mq queue STARTS
   mq_cli_s = mq_open(MQ_CLI_S, O_RDWR);
   if (mq_cli_s == -1) {
@@ -32,6 +28,10 @@ int main(int argc, char **argv) {
   printf("mq_cli_s opened by client process, mq_cli_s id = %d\n",
          (int)mq_cli_s);
   // create and send the first message
+    struct ClientServerItem clientServerItem = {.interval_start = start,
+                                              .interval_width = width,
+                                              .interval_count = count,
+                                              .done = SERVER_CONTINUE};
   {
     int n = mq_send(mq_cli_s, (char *)&clientServerItem,
                     sizeof(struct ClientServerItem), 0);
@@ -39,12 +39,13 @@ int main(int argc, char **argv) {
       perror("mq_send failed\n");
     }
   }
+
   // printf("mq_send success, item size = %d\n", (int) sizeof(struct
   // ChildParentItem)); printf("clientServerItem->pid   = %d\n---------\n",
   // clientServerItem.pid); client receive histogram data
   mqd_t mq_s_cli;
   struct mq_attr mq_s_cli_attr;
-  // open/create m queue STARTS
+  // open m queue STARTS
   mq_s_cli = mq_open(MQ_S_CLI, O_RDWR);
   if (mq_s_cli == -1) {
     perror("Client cannot open msg queue FOR ServerClient\n");
@@ -57,24 +58,24 @@ int main(int argc, char **argv) {
   printf("mq maximum maxmsg = %d msgs\n", (int)mq_s_cli_attr.mq_maxmsg);
 
   int c_status = CLIENT_CONTINUE;
+  // allocate memory for histogram data
   int *freqs = (int *)malloc(count * sizeof(int));
   for (int i = 0; i < count; ++i) {
     freqs[i] = 0;
   }
-  while (1) {
-    char *bufptr;
-    int buflen;
-    struct mq_attr mq_s_cli_attr;
-    /* allocate large enough space for the buffer to store an incoming message
-     */
-    mq_getattr(mq_s_cli, &mq_s_cli_attr);
-    buflen = mq_s_cli_attr.mq_msgsize;
+
+  char *bufptr;
+  int buflen;
+  /* allocate large enough space for the buffer to store an incoming message
+    */
+  mq_getattr(mq_s_cli, &mq_s_cli_attr);
+  buflen = mq_s_cli_attr.mq_msgsize;
     bufptr = (char *)malloc(buflen);
+while (1) {
     int n;
     n = mq_receive(mq_s_cli, (char *)bufptr, buflen, NULL);
     if (n == -1) {
       printf("server to client mq_receive failed\n");
-      free(bufptr);
       sleep(1);
       continue;
     } else {
@@ -84,13 +85,15 @@ int main(int argc, char **argv) {
         freqs[itemptr->interval] = itemptr->interval_frequency;
       }
       c_status = itemptr->status;
-      free(bufptr);
+
       if (c_status == CLIENT_TERMINATE) {
         break;
       }
       /**/
     }
   }
+  free(bufptr);
+
   for (int i = 0; i < count; ++i) {
     printf("[%d,%d):%d\n", start, start + width, freqs[i]);
     start = start + width;

@@ -173,7 +173,7 @@ int main(int argc, char **argv) {
                       sizeof(struct ServerClientItem), 0);
       if (n == -1) {
         printf("mq_send: Loop serverClientItem %d'th failed\n", j);
-        sleep(1);
+        //sleep(1); // sleep for "one second" for each message failure, what a waste of time!
         continue;
       } else {
         break;
@@ -188,38 +188,26 @@ int main(int argc, char **argv) {
   if (n == -1) {
     perror("mq_send: Last serverClientItem failed\n");
   }
-  /*
-  int n = mq_send(mq_s_cli, (char *)&serverClientItem,
-                  sizeof(struct ServerClientItem), 0);
-  if (n == -1) {
-    perror("mq_send: serverClientItem failed\n");
-  }
-  */
-  // print the address of interval_frequencies
-  printf("interval_frequencies address: %p\n", interval_frequencies);
-  // send the results to the client
-  // sendClientMQ();
-  // wait termination signal from client
-  // waitClientMQ();
+  
   // wait for all children to terminate
   for (i = 0; i < N; ++i)
+  {
     wait(NULL);
+  }
   printf("all children terminated.\n");
 
+  char *bufptr;
+  int buflen;
+  /* allocate large enough space for the buffer to store an incoming message
+    */
+  mq_getattr(mq_cli_s, &mq_cli_s_attr);
+  buflen = mq_cli_s_attr.mq_msgsize;
+  bufptr = (char *)malloc(buflen);
   while (s_status != SERVER_TERMINATE) {
-    char *bufptr;
-    int buflen;
-    struct mq_attr mq_cli_s_attr;
-    /* allocate large enough space for the buffer to store an incoming message
-     */
-    mq_getattr(mq_cli_s, &mq_cli_s_attr);
-    buflen = mq_cli_s_attr.mq_msgsize;
-    bufptr = (char *)malloc(buflen);
     int n;
     n = mq_receive(mq_cli_s, (char *)bufptr, buflen, NULL);
     if (n == -1) {
       perror("mq_receive failed, so still waiting for termination msg\n");
-      free(bufptr);
       sleep(1);
       continue;
     } else {
@@ -227,12 +215,13 @@ int main(int argc, char **argv) {
       struct ClientServerItem *itemptr = (struct ClientServerItem *)bufptr;
       s_status = itemptr->done;
       printf("s_status = %d\n", s_status);
-      free(bufptr);
       break;
       /**/
     }
     break;
   }
+  free(bufptr);
+
   printf("termination msg received from client\n");
 
   // close and unlink the message queues
@@ -358,6 +347,7 @@ void child(char *filename, int intervalcount, int intervalwidth,
   if (n == -1) {
     perror("mq_send: termination notice failed\n");
   }
+
   // free the memory
   free(intervals);
   // close and unlink (delete) the mq
@@ -368,6 +358,7 @@ void child(char *filename, int intervalcount, int intervalwidth,
   printf("mq_c_s closed by child process, mq_c_s id = %d\n", (int)mq_c_s);
 }
 // ########### END OF CHILD
+
 // ########### START OF PROCESS CHILD MQ
 int processChildMQ(mqd_t mq, int *interval_freq) {
   char *bufptr;
