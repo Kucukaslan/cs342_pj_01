@@ -161,12 +161,18 @@ int main(int argc, char **argv) {
   for (int j = 0; j < intervalcount; j++) {
     serverClientItem.interval = j;
     serverClientItem.interval_frequency = interval_frequencies[j];
+    serverClientItem.status = CLIENT_CONTINUE;
     printf("%d: %d\n", j, interval_frequencies[j]);
-    int n = mq_send(mq_s_cli, (char *)&serverClientItem,
-                    sizeof(struct ServerClientItem), 0);
-    if (n == -1) {
-      perror("mq_send: Loop serverClientItem failed\n");
-      exit(n);
+    while (1) {
+      int n = mq_send(mq_s_cli, (char *)&serverClientItem,
+                      sizeof(struct ServerClientItem), 0);
+      if (n == -1) {
+        printf("mq_send: Loop serverClientItem %d'th failed\n", j);
+        sleep(1);
+        continue;
+      } else {
+        break;
+      }
     }
   }
   serverClientItem.interval = -1;

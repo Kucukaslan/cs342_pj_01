@@ -1,6 +1,4 @@
 struct ServerClientItem {
-  // int size;
-  // int data[1000];
   int interval;
   int interval_frequency;
   int status;

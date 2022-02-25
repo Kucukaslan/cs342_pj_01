@@ -61,7 +61,7 @@ int main(int argc, char **argv) {
   for (int i = 0; i < count; ++i) {
     freqs[i] = 0;
   }
-  while (c_status == CLIENT_CONTINUE) {
+  while (1) {
     char *bufptr;
     int buflen;
     struct mq_attr mq_s_cli_attr;
@@ -73,7 +73,7 @@ int main(int argc, char **argv) {
     int n;
     n = mq_receive(mq_s_cli, (char *)bufptr, buflen, NULL);
     if (n == -1) {
-      perror("server to client mq_receive failed\n");
+      printf("server to client mq_receive failed\n");
       free(bufptr);
       sleep(1);
       continue;
@@ -84,13 +84,10 @@ int main(int argc, char **argv) {
         freqs[itemptr->interval] = itemptr->interval_frequency;
       }
       c_status = itemptr->status;
-      /*
-      for (int i = 0; i < itemptr->size; ++i) {
-        printf("[%d,%d):%d\n", start, start + width, itemptr->data[i]);
-        start = start + width;
-      }
-       */
       free(bufptr);
+      if (c_status == CLIENT_TERMINATE) {
+        break;
+      }
       /**/
     }
   }
