@@ -6,7 +6,9 @@
 #include <string.h>
 #include <sys/types.h>
 #include <sys/wait.h>
+#include <sys/time.h>
 #include <unistd.h>
+
 typedef struct targ targ;// some weird name collusion, idk
 struct targ {
     char *filename;
@@ -57,6 +59,7 @@ int main(int argc, char **argv)
         exit(1);
     }
     printf("mq_s_cli created, mq_s_cli id = %d\n", (int) mq_s_cli);
+    
     // GET ATTR
     mq_getattr(mq_s_cli, &mq_s_cli_attr);
     printf("mq maximum msgsize = %d\n bytes", (int) mq_s_cli_attr.mq_msgsize);
@@ -109,7 +112,15 @@ int main(int argc, char **argv)
     for (int j = 0; j < N; ++j) {
         shared_arr[j] = malloc(intervalcount * sizeof(int));
     }
-    // creating childs.
+
+    // THE TIMER STARTS
+    // refer to https://ftp.gnu.org/old-gnu/Manuals/glibc-2.2.3/html_node/libc_418.html
+    struct timeval stv;
+    struct timeval etv;
+    // take time at the start
+    gettimeofday(&stv,NULL);
+    
+    // creating child threads.
     for (int j = 0; j < N; ++j) {
         thread_args[j].intervalcount = intervalcount;
         thread_args[j].intervalstart = intervalstart;
@@ -133,7 +144,7 @@ int main(int argc, char **argv)
     for (int j = 0; j < intervalcount; j++) {
         interval_frequencies[j] = 0;
     }
-    
+
     printf("main: waiting all threads to terminate\n");
     for (i = 0; i < N;) {
         //char *retmsg;
@@ -224,6 +235,10 @@ int main(int argc, char **argv)
     free(bufptr);
     printf("termination msg received from client\n");
 
+    // take time at the end
+    gettimeofday(&etv,NULL);
+    // TIMER ENDS
+
     // close and unlink the message queues
     mq_close(mq_s_cli);
     mq_close(mq_cli_s);
@@ -243,6 +258,19 @@ int main(int argc, char **argv)
     // printf("shared_arr freed\n");
     free(thread_args);
     // printf("thread_args freed\n");
+
+    
+    printf("Program execution started at %ld s, %ld us,\n                and ended at %ld s, %ld us\n",
+     stv.tv_sec, stv.tv_usec, etv.tv_sec, etv.tv_usec);
+    long dur_sec = etv.tv_sec - stv.tv_sec;
+    long dur_usec = etv.tv_usec - stv.tv_usec;
+    if(dur_usec < 0)
+    {
+        dur_sec--;
+        dur_usec += 1000000;
+    }
+    printf("It took %ld second and %ld microseconds to complete execution\n",
+        dur_sec, dur_usec);
     return 0;
 }// end of main method
 
@@ -314,9 +342,7 @@ void  child_thread(struct targ *arg)
     // with the interval start and end values
     for (i = 0; i < intervalcount; ++i)
         printf("interval [%d, %d) has %d numbers\n", intervalstart + i * intervalwidth,
-               intervalstart + (i + 1) * intervalwidth, shared_arr[shared_arr_index][i]);
-    
-   
+               intervalstart + (i + 1) * intervalwidth, shared_arr[shared_arr_index][i]);  
    
     // close the file
     fclose(file);

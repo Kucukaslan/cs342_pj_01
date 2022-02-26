@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/wait.h>
+#include <sys/time.h>
 #include <unistd.h>
 
 void child(char *filename, int intervalcount, int intervalwidth,
@@ -118,6 +119,14 @@ int main(int argc, char **argv) {
     break;
   }
 
+
+  // THE TIMER STARTS
+  // refer to https://ftp.gnu.org/old-gnu/Manuals/glibc-2.2.3/html_node/libc_418.html
+  struct timeval stv;
+  struct timeval etv;
+  // take time at the start
+  gettimeofday(&stv,NULL);
+
   printf("I am parent and my pid is: %d\n", parentid);
   int i;
   // creating childs.
@@ -226,6 +235,9 @@ int main(int argc, char **argv) {
 
   printf("termination msg received from client\n");
 
+  // take time at the end
+    gettimeofday(&etv,NULL);
+    // TIMER ENDS
   // close and unlink the message queues
   mq_close(mq_c_s);
   mq_close(mq_s_cli);
@@ -239,6 +251,19 @@ int main(int argc, char **argv) {
   printf("child_pids freed\n");
   free(interval_frequencies);
   printf("interval_frequencies freed\n");
+
+  printf("Program execution started at %ld s, %ld us,\n                and ended at %ld s, %ld us\n",
+    stv.tv_sec, stv.tv_usec, etv.tv_sec, etv.tv_usec);
+  long dur_sec = etv.tv_sec - stv.tv_sec;
+  long dur_usec = etv.tv_usec - stv.tv_usec;
+  if(dur_usec < 0)
+  {
+      dur_sec--;
+      dur_usec += 1000000;
+  }
+  printf("It took %ld second and %ld microseconds to complete execution\n",
+      dur_sec, dur_usec);
+
   return 0;
 } // end of main method
 
