@@ -3,12 +3,7 @@ struct ServerClientItem {
     int interval_frequency;
     int status;
 };
-struct ChildParentItem {
-    int pid;
-    int interval;
-    int interval_frequency;
-    int status;
-};
+
 struct ClientServerItem {
     int done;
     int interval_start;
@@ -24,4 +19,3 @@ struct ClientServerItem {
 
 #define MQ_CLI_S "/21901779_b_CLIENT_SERVER"
 #define MQ_S_CLI "/21901779_b_SERVER_CLIENT"
-#define MQ_C_S "/21901779_b_CHILD_SERVER"

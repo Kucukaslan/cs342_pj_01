@@ -5,9 +5,11 @@
 #include <string.h>
 #include <sys/wait.h>
 #include <unistd.h>
+
 void child(char *filename, int intervalcount, int intervalwidth,
            int intervalstart);
 int processChildMQ(mqd_t mq, int *interval_freq);
+
 int main(int argc, char **argv) {
   // clean up the message queue
   mq_unlink(MQ_C_S);
@@ -289,8 +291,9 @@ void child(char *filename, int intervalcount, int intervalwidth,
       intervals[interval]++;
       // TODO REMOVE DEBUG CODE
       // printf("%d is in interval %d\n", number, interval);
-    } else
-      ; // todo uncomment? printf("number %d is not in interval [%d, %d)\n",
+    } 
+    // else ; 
+    // todo uncomment? printf("number %d is not in interval [%d, %d)\n",
         // number, intervalstart, intervalstart + intervalwidth *
         // intervalcount);
     // if (number_of_lines % 100 == 0)
@@ -299,6 +302,7 @@ void child(char *filename, int intervalcount, int intervalwidth,
     // }
     number_of_lines++;
   }
+
   // print the frequency of each interval
   // with the interval start and end values
   for (i = 0; i < intervalcount; ++i)

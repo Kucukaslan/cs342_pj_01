@@ -21,7 +21,6 @@ int **shared_arr;
 int main(int argc, char **argv)
 {
     // clean message queues
-    mq_unlink(MQ_C_S);
     mq_unlink(MQ_CLI_S);
     mq_unlink(MQ_S_CLI);
 
@@ -127,12 +126,14 @@ int main(int argc, char **argv)
         }
             printf("parent created child thread number %d and child thread id= %lu\n", j, child_thread_ids[j]);
     }
+
     // allocate memory for interval_frequencies
     interval_frequencies = (int *) malloc(intervalcount * sizeof(int));
     // set all interval_frequencies to 0
     for (int j = 0; j < intervalcount; j++) {
         interval_frequencies[j] = 0;
     }
+    
     printf("main: waiting all threads to terminate\n");
     for (i = 0; i < N;) {
         //char *retmsg;
@@ -152,16 +153,8 @@ int main(int argc, char **argv)
         }
     }
     printf("main: all threads terminated. Calculating sums.\n");
-    /*
-    int terminated_threads = 0;
-    while (terminated_threads < N) {
-        if () {
-            terminated_threads++;
-        }
-        //printf("%d:--------------\n\n", i);
-        i++;
-    }
-    */
+    
+    
     // calculate final intervals
     for (int j = 0; j < intervalcount; ++j) {
         int single_interval_sum = 0;
@@ -177,7 +170,7 @@ int main(int argc, char **argv)
     // print the start and end intervals result of interval_frequencies
     for (int j = 0; j < intervalcount; j++) {
         //serverClientItem.data[j] = interval_frequencies[j];
-        printf("%d: %d\n", j, interval_frequencies[j]);
+        printf("Just for debug purposes: %d: %d\n", j, interval_frequencies[j]);
     }
 
     // send final intervals to client using mq_send
@@ -197,7 +190,7 @@ int main(int argc, char **argv)
         }
         int n = mq_send(mq_s_cli, (char *) &serverClientItem, sizeof(struct ServerClientItem), 0);
         if (n == -1) {
-            printf("mq_send failed: %d\n",i);
+            // printf("mq_send failed: %d\n",i);
         } else {
             i++;
         }
@@ -223,7 +216,7 @@ int main(int argc, char **argv)
             // printf("mq_receive success, message size = %d\n", n);
             struct ClientServerItem *itemptr = (struct ClientServerItem *) bufptr;
             s_status = itemptr->done;
-            printf("s_status = %d\n", s_status);
+            // printf("s_status = %d\n", s_status);
             break;
             /**/
         }
@@ -240,18 +233,20 @@ int main(int argc, char **argv)
 
     // free the memory allocated
     free(child_thread_ids);
-    printf("child_thread_ids freed\n");
+    // printf("child_thread_ids freed\n");
     free(interval_frequencies);
-    printf("interval_frequencies freed\n");
+    // printf("interval_frequencies freed\n");
     for (int j = 0; j < N; ++j) {
         free(shared_arr[j]);
     }
     free(shared_arr);
-    printf("shared_arr freed\n");
+    // printf("shared_arr freed\n");
     free(thread_args);
-    printf("thread_args freed\n");
+    // printf("thread_args freed\n");
     return 0;
 }// end of main method
+
+
 /** opens and process the file
 * opens the message queue
 * sends the result of file processing to the parent via the message queue
@@ -320,49 +315,10 @@ void  child_thread(struct targ *arg)
     for (i = 0; i < intervalcount; ++i)
         printf("interval [%d, %d) has %d numbers\n", intervalstart + i * intervalwidth,
                intervalstart + (i + 1) * intervalwidth, shared_arr[shared_arr_index][i]);
-    //  mq variables
-    /*
-    mqd_t mq_c_s;
-    struct ChildParentItem childParentItemPtr;
-    //	int mq_c_s_n;
-    // child opens mq queue STARTS
-    mq_c_s = mq_open(MQ_C_S, O_RDWR);
-    if (mq_c_s == -1) {
-        perror("Child cannot open msg queue FOR ChildParent\n");
-        exit(1);
-    }
-    printf("mq_c_s opened by child process, mq_c_s id = %d\n", (int) mq_c_s);
-    // create and send the messages
-    i = 0;
-    childParentItemPtr.status = CHILD_CONTINUE;
-    while (i < intervalcount) {
-        childParentItemPtr.pid = getpid();
-        childParentItemPtr.interval = i;
-        childParentItemPtr.interval_frequency = intervals[i];
-        int n = mq_send(mq_c_s, (char *) &childParentItemPtr, sizeof(struct ChildParentItem), 0);
-        if (n == -1) {
-            perror("mq_send failed\n");
-        }
-        // printf("mq_send success, item size = %d\n", (int) sizeof(struct ChildParentItem));
-        // printf("childParentItemPtr->pid   = %d\n---------\n", childParentItemPtr.pid);
-        i++;
-    }
-    // child sends the last message to the parent
-    childParentItemPtr.status = CHILD_TERMINATE;
-    childParentItemPtr.pid = getpid();
-    childParentItemPtr.interval = -1;
-    childParentItemPtr.interval_frequency = -1;
-    int n = mq_send(mq_c_s, (char *) &childParentItemPtr, sizeof(struct ChildParentItem), 0);
-    if (n == -1) {
-        perror("mq_send: termination notice failed\n");
-    }
-     */
-    // free the memory
-    // free(intervals); // TODO freed in main
-    // close and unlink (delete) the mq
-    //mq_close(mq_c_s);
+    
+   
+   
     // close the file
     fclose(file);
     pthread_exit(NULL);
-    //printf("mq_c_s closed by child thread, mq_c_s id = %d\n", (int) mq_c_s);
 }
