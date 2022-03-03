@@ -177,12 +177,13 @@ int main(int argc, char **argv)
 
     // todo for some reason, if we don't set any value at initialization
     struct ServerClientItem serverClientItem = { .interval = -1, .interval_frequency = -1, .status = CLIENT_CONTINUE };
-
+    /*
     // print the start and end intervals result of interval_frequencies
     for (int j = 0; j < intervalcount; j++) {
         //serverClientItem.data[j] = interval_frequencies[j];
         printf("Just for debug purposes: %d: %d\n", j, interval_frequencies[j]);
     }
+    */
 
     // send final intervals to client using mq_send
     serverClientItem.status = CLIENT_CONTINUE;
@@ -340,10 +341,11 @@ void  child_thread(struct targ *arg)
     }
     // print the frequency of each interval
     // with the interval start and end values
+    /*
     for (i = 0; i < intervalcount; ++i)
         printf("interval [%d, %d) has %d numbers\n", intervalstart + i * intervalwidth,
                intervalstart + (i + 1) * intervalwidth, shared_arr[shared_arr_index][i]);  
-   
+   */
     // close the file
     fclose(file);
     pthread_exit(NULL);

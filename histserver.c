@@ -178,12 +178,12 @@ int main(int argc, char **argv) {
     serverClientItem.interval = j;
     serverClientItem.interval_frequency = interval_frequencies[j];
     serverClientItem.status = CLIENT_CONTINUE;
-    printf("%d: %d\n", j, interval_frequencies[j]);
+    //printf("%d: %d\n", j, interval_frequencies[j]);
     while (1) {
       int n = mq_send(mq_s_cli, (char *)&serverClientItem,
                       sizeof(struct ServerClientItem), 0);
       if (n == -1) {
-        printf("mq_send: Loop serverClientItem %d'th failed\n", j);
+        //printf("mq_send: Loop serverClientItem %d'th failed\n", j);
         //sleep(1); // sleep for "one second" for each message failure, what a waste of time!
         continue;
       } else {
@@ -197,7 +197,7 @@ int main(int argc, char **argv) {
   int n = mq_send(mq_s_cli, (char *)&serverClientItem,
                   sizeof(struct ServerClientItem), 0);
   if (n == -1) {
-    perror("mq_send: Last serverClientItem failed\n");
+    //perror("mq_send: Last serverClientItem failed\n");
   }
   
   // wait for all children to terminate
@@ -330,10 +330,12 @@ void child(char *filename, int intervalcount, int intervalwidth,
 
   // print the frequency of each interval
   // with the interval start and end values
+  /*
   for (i = 0; i < intervalcount; ++i)
     printf("interval [%d, %d) has %d numbers\n",
            intervalstart + i * intervalwidth,
            intervalstart + (i + 1) * intervalwidth, intervals[i]);
+  */
   //  mq variables
   mqd_t mq_c_s;
   //	int mq_c_s_n;
@@ -359,7 +361,7 @@ void child(char *filename, int intervalcount, int intervalwidth,
     int n = mq_send(mq_c_s, (char *)&childParentItemPtr,
                     sizeof(struct ChildParentItem), 0);
     if (n == -1) {
-      perror("mq_send failed\n");
+      //perror("mq_send failed\n");
     }
     // printf("mq_send success, item size = %d\n", (int) sizeof(struct
     // ChildParentItem)); printf("childParentItemPtr->pid   = %d\n---------\n",
@@ -374,7 +376,7 @@ void child(char *filename, int intervalcount, int intervalwidth,
   int n = mq_send(mq_c_s, (char *)&childParentItemPtr,
                   sizeof(struct ChildParentItem), 0);
   if (n == -1) {
-    perror("mq_send: termination notice failed\n");
+    //perror("mq_send: termination notice failed\n");
   }
 
   // free the memory
